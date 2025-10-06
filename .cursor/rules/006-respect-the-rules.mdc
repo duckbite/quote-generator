@@ -1,0 +1,13 @@
+---
+description: Enforce architectural guidelines by following established architecture documents and consulting with the user for deviations or changes. Apply this rule when making architectural decisions, implementing new features, or when no architecture document exists for the project.
+globs:
+alwaysApply: true
+tags: [architecture, guidelines, design, patterns]
+priority: 1
+---
+
+- the product description in @docs/product.md is leading. If no product description exists, don’t write anything and ask the user to provide one.
+- stick to the architecture as described in @docs/architecture.md. If no architecture doc exists, don’t write anything and ask the user to provide one, or create one together. If the architecture document is incomplete, warn the user and propose to extend it. Offer the user options when deciding on tech stack choices.
+- stick to the project NFRs as define in @docs/nfr.md. If no non-functional requirements exist, warn the user before writing any code.
+- stick to the plan as created in @docs/plan.md. If no plan exists, create one together with the user.
+- When writing code, always adhere to the relevant rules for that specific coding language in the 2xxx region in .cursor/rules/. If no rules doc exists for the language you are using, warn the user about this and offer to add cursor rules based on universal best practices.

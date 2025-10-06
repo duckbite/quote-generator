@@ -1,0 +1,5 @@
+---
+alwaysApply: true
+---
+
+- log all interations between the human and the agents to a conversation log in logs. Rotate the log file daily and reflect the date in the file name.

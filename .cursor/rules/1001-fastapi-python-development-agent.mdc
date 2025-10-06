@@ -1,0 +1,176 @@
+---
+description: Comprehensive FastAPI Python development guidelines with clean dependency management, following Node.js-style patterns for virtual environments and package management. Covers FastAPI best practices, project structure, dependency injection, async/await patterns, error handling, testing, and deployment strategies for serverless applications. Apply when developing FastAPI applications, setting up Python project structure, implementing API endpoints, data validation, error handling, or working with AWS services (DynamoDB, OpenSearch, Lambda).
+globs: **/*.py
+tags: [fastapi, python, backend, api, serverless, aws, dependencies]
+priority: 1
+---
+
+# FastAPI Python Development Guidelines
+
+## Context
+
+- When developing FastAPI applications, especially for serverless deployment
+- When setting up Python project structure and dependency management
+- When implementing API endpoints, data validation, and error handling
+- When working with AWS services (DynamoDB, OpenSearch, Lambda)
+
+## Requirements
+
+### Project Structure & Dependencies
+
+- Use clean dependency management similar to Node.js patterns
+- Keep `requirements.txt` for development dependencies (like package.json)
+- Use `lambda_requirements.txt` for production Lambda deployment
+- Store dependencies in `venv/` or `deps/` directory (like node_modules/)
+- Never commit installed Python packages to version control
+- Use virtual environments for local development
+
+### FastAPI Best Practices
+
+- Use Pydantic models for request and response schemas
+- Implement dependency injection for shared resources (DB clients, services)
+- Utilize async/await for non-blocking operations
+- Use path operations decorators (@app.get, @app.post, etc.)
+- Implement proper error handling with HTTPException
+- Use FastAPI's built-in OpenAPI and JSON Schema support
+- Follow PEP 8 style guide for Python code
+
+### Code Organization
+
+```
+backend/
+├── api/                    # API endpoints and route handlers
+├── schemas/               # Pydantic models for data validation
+├── models/                # Database models and business logic
+├── services/              # Business logic and external service integrations
+├── utils/                 # Utility functions and shared helpers
+├── dependencies/          # FastAPI dependency injection
+├── tests/                 # Unit and integration tests
+├── requirements.txt       # Development dependencies
+├── lambda_requirements.txt # Production Lambda dependencies
+├── serverless.yml         # Serverless Framework configuration
+└── venv/                  # Virtual environment (ignored by git)
+```
+
+### Type Hints & Validation
+
+- Use type hints for all function parameters and return values
+- Implement proper input validation using Pydantic
+- Use Union types for optional parameters
+- Define clear response models with Pydantic
+
+### Async/Await Patterns
+
+- Use async/await for all I/O operations (database, HTTP requests)
+- Implement proper async context managers for resources
+- Use asyncio.gather() for concurrent operations when appropriate
+- Handle async exceptions properly
+
+### Error Handling
+
+- Use HTTPException for API errors with appropriate status codes
+- Implement custom exception classes for business logic errors
+- Use try/catch blocks for external service calls
+- Log errors with appropriate levels (ERROR, WARNING, INFO)
+
+### Security & Authentication
+
+- Use FastAPI's security utilities for authentication
+- Implement proper CORS handling
+- Validate and sanitize all input data
+- Use environment variables for sensitive configuration
+
+### Testing
+
+- Implement comprehensive unit and integration tests
+- Use pytest for testing framework
+- Mock external dependencies in tests
+- Test both success and error scenarios
+- Use async test functions for async code
+
+### Deployment & Serverless
+
+- Use Serverless Framework for AWS Lambda deployment
+- Implement proper environment variable management
+- Use Lambda layers for shared dependencies when appropriate
+- Configure proper IAM roles and permissions
+- Implement health check endpoints
+
+## Examples
+
+<example>
+Good FastAPI endpoint with proper structure:
+```python
+from fastapi import APIRouter, HTTPException, Depends
+from pydantic import BaseModel
+from typing import List, Optional
+from ..schemas.product import Product, ProductCreate
+from ..services.product_service import ProductService
+from ..dependencies import get_product_service
+
+router = APIRouter(prefix="/products", tags=["products"])
+
+@router.get("/", response_model=List[Product])
+async def get_products(
+skip: int = 0,
+limit: int = 100,
+product_service: ProductService = Depends(get_product_service)
+) -> List[Product]:
+"""Get all products with pagination."""
+try:
+products = await product_service.get_products(skip=skip, limit=limit)
+return products
+except Exception as e:
+raise HTTPException(status_code=500, detail="Failed to fetch products")
+
+@router.post("/", response_model=Product)
+async def create_product(
+product_data: ProductCreate,
+product_service: ProductService = Depends(get_product_service)
+) -> Product:
+"""Create a new product."""
+try:
+product = await product_service.create_product(product_data)
+return product
+except ValueError as e:
+raise HTTPException(status_code=400, detail=str(e))
+except Exception as e:
+raise HTTPException(status_code=500, detail="Failed to create product")
+
+````
+</example>
+
+<example type="invalid">
+Bad FastAPI endpoint without proper structure:
+```python
+from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/products")
+def get_products():
+    # No type hints, no error handling, no validation
+    return {"products": []}
+
+@app.post("/products")
+def create_product(data: dict):
+    # No Pydantic model, no validation, no error handling
+    return {"message": "created"}
+````
+
+</example>
+
+## Critical Points
+
+<critical>
+  - ALWAYS use virtual environments for Python projects
+  - NEVER commit installed packages (venv/, deps/, *.dist-info/)
+  - ALWAYS use Pydantic models for data validation
+  - ALWAYS implement proper error handling with HTTPException
+  - ALWAYS use type hints for function signatures
+  - ALWAYS use async/await for I/O operations
+  - ALWAYS implement comprehensive tests
+  - NEVER hardcode sensitive information
+  - ALWAYS use dependency injection for shared resources
+  - ALWAYS follow PEP 8 style guidelines
+</critical>

@@ -1,0 +1,106 @@
+---
+description: When developing serverless applications using the Serverless Framework, this rule ensures proper configuration, deployment practices, and AWS resource management. Apply this rule when creating or modifying serverless.yml files, deploying serverless applications, configuring AWS resources, or implementing serverless architecture patterns. This rule covers infrastructure as code principles, environment management, security best practices, and deployment strategies essential for maintaining scalable and secure serverless applications.
+globs: serverless.yml, serverless/*.yml, **/serverless.yml
+alwaysApply: false
+tags: [serverless, aws, infrastructure, deployment]
+priority: 2
+---
+
+# Serverless Framework Development
+
+## Context
+
+- When creating or modifying serverless.yml configuration files
+- During serverless application deployment and management
+- When configuring AWS resources through Serverless Framework
+- When implementing serverless architecture patterns
+
+## Requirements
+
+- Define all AWS resources in serverless.yml using infrastructure as code principles
+- Use environment separation with different stages for dev, staging, and production
+- Implement least privilege access and secure defaults for all resources
+- Use consistent naming conventions with stage prefixes for all resources
+- Configure appropriate memory allocation and timeout settings for Lambda functions
+- Enable proper monitoring, logging, and cost optimization
+- Use stage-specific configuration variables and environment management
+- Implement proper IAM roles with least privilege principle
+- Configure VPC only when necessary for database access
+- Use Lambda layers for shared dependencies
+
+## Examples
+
+<example>
+Good: Proper serverless.yml structure with environment separation
+```yaml
+service: my-api
+frameworkVersion: '3'
+
+provider:
+name: aws
+runtime: nodejs22.x
+stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-east-1'}
+  environment:
+    NODE_ENV: ${self:provider.stage}
+    STAGE: ${self:provider.stage}
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+          Resource:
+            - 'arn:aws:dynamodb:${self:provider.region}:_:table/${self:service}-${self:provider.stage}-_'
+
+functions:
+api:
+handler: src/handlers/api.handler
+events: - http:
+path: /api
+method: ANY
+cors: true
+environment:
+TABLE_NAME: ${self:custom.tableName}
+
+````
+</example>
+
+<example type="invalid">
+Bad: Missing environment separation and security
+```yaml
+service: my-api
+provider:
+  name: aws
+  runtime: nodejs22.x
+  environment:
+    NODE_ENV: production
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action: "*"
+          Resource: "*"
+
+functions:
+  api:
+    handler: src/handlers/api.handler
+    events:
+      - http:
+          path: /api
+          method: ANY
+````
+
+</example>
+
+## Critical Points
+
+<critical>
+  - ALWAYS use environment separation with stage-specific configuration
+  - NEVER use wildcard permissions in IAM roles
+  - ALWAYS validate serverless.yml before deployment
+  - ENSURE proper resource naming with stage prefixes
+  - ALWAYS configure appropriate memory and timeout for Lambda functions
+  - NEVER hardcode production values in configuration
+</critical>

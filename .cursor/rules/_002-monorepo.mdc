@@ -1,0 +1,78 @@
+---
+alwaysApply: true
+---
+
+# Monorepo Rules (Turborepo + Language-Agnostic Shared Code)
+
+## Goals
+
+- Single monorepo for one project with many deployables (apps, services, workers).
+- Language-agnostic structure with shared code under `shared/<language>/*`.
+- Fast, incremental builds via Turborepo; consistent DX across languages.
+- Strict boundaries: deployables don’t import other deployables; only shared libs.
+
+---
+
+## Folder Structure (authoritative)
+
+```
+repo-root/
+├─ apps/ # User-facing deployables (any language)
+│ ├─ web/ # e.g. React app (TS)
+│ └─ admin/ # another app
+├─ services/ # Long-running backends/APIs
+│ ├─ api-ts/ # Node/TS service
+│ └─ api-py/ # Python FastAPI service
+├─ workers/ # Batch/cron/queue consumers
+│ ├─ importer-py/ # Python worker
+│ └─ email-ts/ # Node/TS worker
+├─ shared/ # All shared code/assets by type/language
+│ ├─ typescript/
+│ │ ├─ ui/ # React component lib (example)
+│ │ └─ utils/ # TS utilities
+│ ├─ python/
+│ │ └─ common/ # Py domain models/clients
+│ ├─ schemas/ # OpenAPI/GraphQL/JSON Schema, language-agnostic
+│ │ ├─ openapi/
+│ │ ├─ graphql/
+│ │ └─ jsonschema/
+│ ├─ protos/ # Protobuf IDL (optional)
+│ ├─ sql/ # Reusable SQL (views/functions)
+│ └─ assets/ # Logos/fonts/copy/etc.
+├─ tools/ # Codegen, release, misc scripts
+│ ├─ codegen/
+│ └─ release/
+├─ infra/ # IaC / deploy / Docker (optional)
+│ ├─ k8s/
+│ ├─ terraform/
+│ └─ docker/
+├─ .github/ # CI, CODEOWNERS
+├─ .vscode/ # Editor settings
+├─ turbo.json
+├─ pnpm-workspace.yaml
+├─ package.json # Root scripts only (no runtime deps)
+├─ tsconfig.base.json # If using TS
+├─ .editorconfig
+└─ .env.example
+```
+
+**Enforcement**
+
+- New deployables go under `apps/`, `services/`, or `workers/`.
+- Shared code must live inside `shared/…` with a clear, language-specific home.
+- Do not create ad-hoc `common/` folders outside `shared/`.
+
+---
+
+## Workspace & Discovery
+
+**pnpm-workspace.yaml**
+
+```yaml
+packages:
+  - 'apps/*'
+  - 'services/*'
+  - 'workers/*'
+  - 'shared/*/*' # e.g., shared/typescript/*, shared/python/*
+  - 'tools/*'
+```

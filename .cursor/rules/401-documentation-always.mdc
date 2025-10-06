@@ -1,0 +1,9 @@
+---
+alwaysApply: true
+---
+
+use the following project documentation and use it thoroughly:
+
+- docs/plan.md - describe the full plan here and stick to it. While coding, check off steps that have been done
+- docs/folder-structure.md - write a human (and machine) readable folder structure with descriptions where needed. This will help you find the right files. update when the structure changes.
+- README.md - Describe how to use the application. So the user can easily run, test, and deploy the application without AI if needed.
