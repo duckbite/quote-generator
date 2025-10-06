@@ -13,7 +13,7 @@ A simple API that returns a random inspirational quote generated or curated by A
 
 - Runtime: API Gateway → AWS Lambda using Python with FastAPI.
 - IaC: Serverless Framework.
-- AWS Region: eu-central-1.
+- AWS Region: us-east-1.
 
 ## API Surface
 

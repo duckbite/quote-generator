@@ -1,0 +1,44 @@
+# macOS
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+coverage.xml
+.mypy_cache/
+.ruff_cache/
+.venv/
+
+# Lambda / Serverless
+**/.serverless/
+**/.python_packages/
+
+# Node
+node_modules/
+npm-debug.log*
+package-lock.json# lockfile is optional; remove this line if you want to commit it
+
+# Environments & local config
+.env
+.env.*
+!.env.example
+.envrc
+
+# Editors/IDE
+.idea/
+.vscode/
+
+# Build artifacts
+dist/
+build/
+
+# Vendored wheels (CI-only, do not commit)
+**/*.whl
+**/*.dist-info/
+**/*.egg-info/
+
+

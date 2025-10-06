@@ -1,0 +1,90 @@
+service: quote-generator-api-py
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: python3.11
+  region: us-east-1
+  stage: prod
+  memorySize: 512
+  timeout: 10
+  logs:
+    http: true
+  environment:
+    APP_ENV: ${sls:stage}
+    DDB_TABLE_NAME: ${self:custom.dynamoTableName}
+    OPENAI_API_KEY: ${env:OPENAI_API_KEY, ''} # Note: Provide via CI or Secrets Manager fetch at deploy-time
+    OPENAI_MODEL: gpt-4o-mini
+    OPENAI_TEMPERATURE: '0.7'
+    OPENAI_SEED: '0'
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:PutItem
+            - dynamodb:GetItem
+            - dynamodb:UpdateItem
+            - dynamodb:DescribeTable
+          Resource:
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.dynamoTableName}
+
+package:
+  patterns:
+    - '!node_modules/**'
+    - 'src/**'
+
+functions:
+  api:
+    handler: src/app.handler
+    reservedConcurrency: 1
+    events:
+      - httpApi:
+          path: /quote
+          method: get
+          cors:
+            allowedOrigins:
+              - '*'
+            allowedHeaders:
+              - '*'
+            allowedMethods:
+              - GET
+
+custom:
+  dynamoTableName: quote-generator-prod
+  apiGatewayThrottling:
+    maxRequestsPerSecond: 1
+    maxConcurrentRequests: 1
+
+resources:
+  Resources:
+    QuotesCacheTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.dynamoTableName}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: pk
+            AttributeType: S
+          - AttributeName: sk
+            AttributeType: S
+        KeySchema:
+          - AttributeName: pk
+            KeyType: HASH
+          - AttributeName: sk
+            KeyType: RANGE
+        TimeToLiveSpecification:
+          AttributeName: ttl
+          Enabled: true
+
+  Outputs:
+    HttpApiId:
+      Value:
+        Ref: HttpApi
+    HttpApiUrl:
+      Value:
+        Fn::Sub: 'https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com'
+
+plugins:
+  - serverless-iam-roles-per-function
