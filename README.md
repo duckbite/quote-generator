@@ -38,3 +38,21 @@ bash tools/deploy.sh
 - Push to `main` triggers `.github/workflows/deploy.yml`.
 - The workflow fetches `OPENAI_API_KEY` from Secrets Manager and deploys to `us-east-1`.
 - After deploy, find the API URL in the Serverless output or CloudFormation stack outputs. The output key is `HttpApiUrl`.
+
+### GitHub Actions Deploy Role (CloudFormation)
+
+Create an IAM role with OIDC trust for GitHub Actions and least-privilege permissions for deploys:
+
+```bash
+# From repo root
+export AWS_REGION=us-east-1
+export STACK_NAME=github-actions-deploy-role
+export GITHUB_ORG=<your-org-or-user>
+export REPO_NAME=ai-assisted-coding/quote-generator
+export BRANCH=main
+export SECRETS_ARN=arn:aws:secretsmanager:us-east-1:052306545299:secret:prod/quote-generator/openai-key-MVrI4K
+
+bash tools/deploy-role.sh
+```
+
+- Use the `RoleArn` output in your repository’s secrets as `AWS_ROLE_TO_ASSUME` for the CI workflow.

@@ -2,7 +2,8 @@
   "name": "quote-generator-monorepo",
   "private": true,
   "devDependencies": {
-    "serverless": "^3.39.0"
+    "serverless": "^3.39.0",
+    "serverless-iam-roles-per-function": "^3.2.0"
   },
   "scripts": {
     "sls": "serverless",

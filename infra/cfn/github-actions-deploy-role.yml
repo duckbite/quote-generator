@@ -1,0 +1,82 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: IAM role for GitHub Actions to deploy Serverless stack via OIDC
+
+Parameters:
+  GitHubOrg:
+    Type: String
+    Description: GitHub organization or user name
+  RepoName:
+    Type: String
+    Description: Repository name
+  Branch:
+    Type: String
+    Default: main
+    Description: Branch to allow (e.g., main)
+  RoleName:
+    Type: String
+    Default: github-actions-deploy-role
+  SecretsManagerArn:
+    Type: String
+    Description: ARN of the OpenAI secret to allow GetSecretValue
+
+Resources:
+  GithubOidcProvider:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+      ThumbprintList:
+        - 6938fd4d98bab03faadb97b34396831e3780aea1
+
+  GithubActionsDeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: { Ref: RoleName }
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: { Ref: GithubOidcProvider }
+            Action:
+              - sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringLike:
+                token.actions.githubusercontent.com:sub:
+                  {
+                    Fn::Sub: 'repo:${GitHubOrg}/${RepoName}:ref:refs/heads/${Branch}',
+                  }
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+      Path: /
+      Policies:
+        - PolicyName: serverless-deploy-access
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - cloudformation:*
+                  - iam:PassRole
+                  - iam:GetRole
+                  - iam:CreateRole
+                  - iam:PutRolePolicy
+                  - iam:AttachRolePolicy
+                  - logs:*
+                  - lambda:*
+                  - dynamodb:*
+                  - apigateway:*
+                  - events:*
+                  - s3:*
+                  - secretsmanager:GetSecretValue
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                Resource: { Ref: SecretsManagerArn }
+
+Outputs:
+  RoleArn:
+    Value: { 'Fn::GetAtt': [GithubActionsDeployRole, Arn] }
+    Description: ARN of the role to configure in GitHub Actions
