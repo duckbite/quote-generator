@@ -5,9 +5,20 @@ import hashlib
 from typing import Optional
 
 import boto3
+from botocore.exceptions import ClientError
 from fastapi import FastAPI, Query, HTTPException
 from mangum import Mangum
 from openai import OpenAI
+from pathlib import Path
+try:
+    from dotenv import load_dotenv  # type: ignore
+    repo_root_env = Path(__file__).resolve().parents[3] / ".env"
+    service_env = Path(__file__).resolve().parents[1] / ".env"
+    for env_path in [repo_root_env, service_env]:
+        if env_path.exists():
+            load_dotenv(env_path.as_posix())
+except Exception:
+    pass
 
 
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
@@ -34,8 +45,15 @@ def build_cache_key(topic: str, style: Optional[str], length: Optional[str], mod
 
 
 def get_cache(pk: str, sk: str):
-    resp = table.get_item(Key={"pk": pk, "sk": sk})
-    return resp.get("Item")
+    try:
+        resp = table.get_item(Key={"pk": pk, "sk": sk})
+        return resp.get("Item")
+    except ClientError as error:
+        error_code = error.response.get("Error", {}).get("Code")
+        if error_code == "ResourceNotFoundException":
+            # Treat missing table as cache miss in local/dev
+            return None
+        raise
 
 
 def put_cache(pk: str, sk: str, quote: str, attribution: Optional[str], ttl_seconds: int):
@@ -49,7 +67,14 @@ def put_cache(pk: str, sk: str, quote: str, attribution: Optional[str], ttl_seco
         "ttl": now + ttl_seconds,
         "createdAt": now,
     }
-    table.put_item(Item=item)
+    try:
+        table.put_item(Item=item)
+    except ClientError as error:
+        error_code = error.response.get("Error", {}).get("Code")
+        if error_code == "ResourceNotFoundException":
+            # Ignore writes when table doesn't exist locally
+            return
+        raise
 
 
 def generate_quote_with_openai(topic: str, style: Optional[str], length: Optional[str]) -> dict:
@@ -69,18 +94,22 @@ def generate_quote_with_openai(topic: str, style: Optional[str], length: Optiona
         "Return only the quote text without attribution."
     )
 
-    completion = openai_client.chat.completions.create(
-        model=OPENAI_MODEL,
-        temperature=OPENAI_TEMPERATURE,
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-        seed=OPENAI_SEED if OPENAI_SEED > 0 else None,
-    )
-
-    quote_text = completion.choices[0].message.content.strip()
-    return {"quote": quote_text, "attribution": None, "source": "generated"}
+    try:
+        completion = openai_client.chat.completions.create(
+            model=OPENAI_MODEL,
+            temperature=OPENAI_TEMPERATURE,
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt},
+            ],
+            seed=OPENAI_SEED if OPENAI_SEED > 0 else None,
+        )
+        quote_text = completion.choices[0].message.content.strip()
+        return {"quote": quote_text, "attribution": None, "source": "generated"}
+    except Exception:
+        # Fallback to a deterministic placeholder when OpenAI fails locally
+        fallback = f"Ducks thrive where persistence meets calm waters."
+        return {"quote": fallback, "attribution": None, "source": "fallback"}
 
 
 @app.get("/quote")
