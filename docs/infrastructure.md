@@ -1,4 +1,4 @@
 # Infrastructure
 
-- Use Serverless Framework
+- Use Terraform for everything infra
 - Deploy only a live version to quote-generator.duckbite.nl

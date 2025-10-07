@@ -6,14 +6,15 @@ A simple API that returns a random inspirational quote generated or curated by A
 
 - User sends an HTTP request → API Gateway → Lambda → returns quote.
 - Use OpenAI for generating quotes dynamically.
-- Cache results in DynamoDB or S3 to avoid repeated API calls.
 - Quote always has something to do with ducks
+- Local development: Python 3.12 using uv for dependency management
 
 ## Architecture & Deployment
 
 - Runtime: API Gateway → AWS Lambda using Python with FastAPI.
 - IaC: Serverless Framework.
 - AWS Region: us-east-1.
+- Local run: Uvicorn for FastAPI with hot-reload
 
 ## API Surface
 
@@ -31,16 +32,9 @@ A simple API that returns a random inspirational quote generated or curated by A
 - Key management: OPENAI_API_KEY retrieved from AWS Secrets Manager at deploy time and injected into function environment.
   - Secret ARN: arn:aws:secretsmanager:us-east-1:052306545299:secret:prod/quote-generator/openai-key-MVrI4K
 
-## Caching & Persistence
-
-- Storage: DynamoDB (on-demand capacity).
-- Table name: quote-generator-prod.
-- Design: single-table best practices with partition/sort keys; cache key based on normalized (topic, style, length, model, version).
-- TTL: 24 hours (1 day).
-
 ## Non-Functional Requirements
 
-- Latency: P95 < 500ms when cached; < 3s when generated.
+- Latency: P95 < 3s.
 - Throughput: very low (testing only).
 - Cost guardrails: daily cap of 1 USD.
 - Logging/observability: none required initially.
@@ -53,5 +47,5 @@ A simple API that returns a random inspirational quote generated or curated by A
 
 ## Testing & Quality
 
-- Tests: unit (prompt builder, cache), integration (OpenAI mocked from latest Swagger), contract tests for API.
+- Tests: unit (prompt builder), integration (OpenAI mocked from latest Swagger), contract tests for API.
 - Environments: prod only (for now).
